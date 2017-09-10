@@ -4,4 +4,22 @@ node_modules
 
 *.log
 
+*.bak
+
+*.exe
+
+*.dll
+
+*.backup
+
+*.tfvars
+
 .DS_Store
+
+terraform.tfplan
+
+terraform.tfstate
+
+./*.tfstate
+
+.terraform/
