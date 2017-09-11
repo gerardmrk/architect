@@ -8,12 +8,12 @@ provider "aws" {
 
 # State Logs
 resource "aws_s3_bucket" "iac_state_access_logs" {
-  bucket = "${lower(trimspace(var.app_name))}-iac-state-access-logs"
+  bucket = "${lower(replace(trimspace(var.app_name), " ", "-"))}-iac-state-access-logs"
   region = "${var.cloud_region}"
   acl    = "log-delivery-write"
 
   lifecycle {
-    prevent_destroy = false
+    prevent_destroy = true
   }
 
   lifecycle_rule {
@@ -25,37 +25,32 @@ resource "aws_s3_bucket" "iac_state_access_logs" {
       storage_class = "STANDARD_IA"
     }
 
-    transition {
-      days          = 60
-      storage_class = "GLACIER"
-    }
-
     expiration {
-      days = 90
+      days = 60
     }
 
     tags {
-      App = "${var.app_name}"
+      App     = "${var.app_name}"
       Context = "IAC"
     }
   }
 
   tags {
-    App = "${var.app_name}"
+    App     = "${var.app_name}"
     Context = "IAC"
   }
 }
 
 # State Storage
 resource "aws_s3_bucket" "iac_state_storage" {
-  bucket        = "${lower(trimspace(var.app_name))}-iac-state-storage"
-  acl = "private"
-  region = "${var.cloud_region}"
+  bucket        = "${lower(replace(trimspace(var.app_name), " ", "-"))}-iac-state-storage"
+  acl           = "private"
+  region        = "${var.cloud_region}"
   force_destroy = false
   request_payer = "Requester"
 
   lifecycle {
-    prevent_destroy = false
+    prevent_destroy = true
   }
 
   versioning {
@@ -67,21 +62,21 @@ resource "aws_s3_bucket" "iac_state_storage" {
   }
 
   tags {
-    App = "${var.app_name}"
+    App     = "${var.app_name}"
     Context = "IAC"
   }
 }
 
 # State Locker
 resource "aws_dynamodb_table" "iac_state_lock" {
-  name           = "${title(trimspace(var.app_name))}IACStateLock"
+  name           = "${replace(title(trimspace(var.app_name)), " ", "")}IacStateLock"
   read_capacity  = 5
   write_capacity = 5
 
   hash_key = "LockID"
 
   lifecycle {
-    prevent_destroy = false
+    prevent_destroy = true
   }
 
   attribute {
@@ -90,7 +85,7 @@ resource "aws_dynamodb_table" "iac_state_lock" {
   }
 
   tags {
-    App = "${var.app_name}"
+    App     = "${var.app_name}"
     Context = "IAC"
   }
 }
