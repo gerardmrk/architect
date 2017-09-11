@@ -49,6 +49,7 @@ resource "aws_s3_bucket" "iac_state_access_logs" {
 # State Storage
 resource "aws_s3_bucket" "iac_state_storage" {
   bucket        = "${lower(trimspace(var.app_name))}-iac-state-storage"
+  acl = "private"
   region = "${var.cloud_region}"
   force_destroy = false
   request_payer = "Requester"
