@@ -1,22 +1,5 @@
 # ARCHITECT
 
-## Anatomy
-
-### Resource Block Declaration
-
-```hcl
-#
-# [COMPONENT] "[PROVIDER]_[TYPE]" "[NAME]" {
-#   ...[CONFIGURATION_&_ATTRIBUTES]
-# }
-#
-
-resource "aws_instance" "main" {
-  ami           = "ami-408c7f28"
-  instance_type = "t1.micro"
-}
-```
-
 ## Scripts
 
 ### `validate`
@@ -33,11 +16,11 @@ resource "aws_instance" "main" {
 
 - generate dependency graphs for a specified group of resources
 
-## Main Resources (_main)
+## Main Resources & Services (base)
 
 iac state backend
 
-iac state locker
+iac state lock
 
 credentials server
 
