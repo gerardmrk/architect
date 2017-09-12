@@ -86,7 +86,16 @@ resource "aws_s3_bucket" "iac_state_storage" {
     Context = "IAC"
   }
 
+  depends_on = [
+    "aws_dynamodb_table.iac_state_lock",
+    "aws_s3_bucket.iac_state_access_logs",
+  ]
+
   provisioner "local-exec" {
-    command = "architect --set-backend ${aws_s3_bucket.iac_state_storage.bucket}"
+    command = <<EOF
+architect backend
+--storage-id=${aws_s3_bucket.iac_state_storage.id}
+--storage-region=${aws_dynamodb_table.iac_state_lock.id}
+EOF
   }
 }

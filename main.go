@@ -39,6 +39,6 @@ func main() {
 	fmt.Println(flag.Args())
 }
 
-func ValidateAllBlueprints() {
+func generateBackendConfig() {
 
 }
