@@ -1,5 +1,0 @@
-Meta:
-  ScriptMappings:
-    validate: terraform validate
-    format: terraform fmt
-    
