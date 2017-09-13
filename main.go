@@ -69,30 +69,36 @@ func main() {
 	}
 }
 
+// Cmd is a registered CLI subcommand instantiated with flag.NewFlagSet
 type Cmd struct {
 	FlagSet *flag.FlagSet
 }
 
+// Opt implements a set of helper methods for a CLI subcommand
 type Opt interface {
 	Validate() error
 	Handle() error
 	Parse([]string)
 }
 
+// DebugCmd [TEMPORARY] temporary measure to debug code without needing to switch go workspaces
 type DebugCmd struct {
 	Cmd
 }
 
+// FormatCmd formats the scoped set of Terraform config files according to HCL syntax
 type FormatCmd struct {
 	Cmd
 	All *bool
 }
 
+// ValidateCmd validates the scoped set of Terraform config files according to HCL syntax
 type ValidateCmd struct {
 	Cmd
 	All *bool
 }
 
+// RemoteStateCmd updates the remote state backend for the 'default' Terraform workspace
 type RemoteStateCmd struct {
 	Cmd
 	AppName    *string
@@ -160,14 +166,17 @@ terraform {
 }
 `, *c.AppName, *c.StorageID, *c.StorageKey, *c.StorageRg, *c.LockID)
 
-	// write the file to the specified location
+	// write the file (containing the remote state backend config for the 'default'
+	// workspace) to the specified location
 	err := ioutil.WriteFile(*c.ConfigPath, []byte(cfg), 0644)
 
 	if err != nil {
 		return err
 	}
 
-	cmd := exec.Command("terraform", "init", "-reconfigure")
+	// execute 'terraform init -reconfigure -force-copy' to reinitialize
+	// and move the local copy to the remote state
+	cmd := exec.Command("terraform", "init", "-reconfigure", "-force-copy")
 
 	out, err := cmd.Output()
 
