@@ -12,7 +12,7 @@ resource "aws_dynamodb_table" "iac_state_lock" {
   hash_key = "LockID"
 
   lifecycle {
-    prevent_destroy = true
+    prevent_destroy = false
   }
 
   attribute {
@@ -33,7 +33,7 @@ resource "aws_s3_bucket" "iac_state_access_logs" {
   acl    = "log-delivery-write"
 
   lifecycle {
-    prevent_destroy = true
+    prevent_destroy = false
   }
 
   lifecycle_rule {
@@ -70,7 +70,7 @@ resource "aws_s3_bucket" "iac_state_storage" {
   request_payer = "Requester"
 
   lifecycle {
-    prevent_destroy = true
+    prevent_destroy = false
   }
 
   versioning {
@@ -93,9 +93,15 @@ resource "aws_s3_bucket" "iac_state_storage" {
 
   provisioner "local-exec" {
     command = <<EOF
-architect backend
---storage-id=${aws_s3_bucket.iac_state_storage.id}
---storage-region=${aws_dynamodb_table.iac_state_lock.id}
+architect remotestate \
+  --config-path='config.tf' \
+  --app-name=${var.app_name} \
+  --storage-id=${aws_s3_bucket.iac_state_storage.id} \
+  --storage-key=base/terraform.tfstate \
+  --storage-region=${aws_s3_bucket.iac_state_storage.region} \
+  --lock-id=${aws_dynamodb_table.iac_state_lock.id} \
+  --cleanup-local \
+  --script-invocation
 EOF
   }
 }
