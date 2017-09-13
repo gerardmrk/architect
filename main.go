@@ -9,24 +9,31 @@ import (
 )
 
 func main() {
+	cmds := make(map[string]Opt)
+
+	// register 'debug' subcommand
 	var debug = new(DebugCmd)
-	var format = new(FormatCmd)
-	var validate = new(ValidateCmd)
-	var remotestate = new(RemoteStateCmd)
-
 	var debugCmd = flag.NewFlagSet("debug", flag.ExitOnError)
-	var formatCmd = flag.NewFlagSet("format", flag.ExitOnError)
-	var validateCmd = flag.NewFlagSet("validate", flag.ExitOnError)
-	var remotestateCmd = flag.NewFlagSet("remotestate", flag.ExitOnError)
-
 	debug.FlagSet = debugCmd
+	cmds["debug"] = debug
 
+	// register 'format' subcommand
+	var format = new(FormatCmd)
+	var formatCmd = flag.NewFlagSet("format", flag.ExitOnError)
 	format.FlagSet = formatCmd
 	format.All = formatCmd.Bool("all", true, "Format all blueprints")
+	cmds["format"] = format
 
+	// register 'validate' subcommand
+	var validate = new(ValidateCmd)
+	var validateCmd = flag.NewFlagSet("validate", flag.ExitOnError)
 	validate.FlagSet = validateCmd
 	validate.All = validateCmd.Bool("all", true, "Validate all blueprints")
+	cmds["validate"] = validate
 
+	// register 'remotestate' subcommand
+	var remotestate = new(RemoteStateCmd)
+	var remotestateCmd = flag.NewFlagSet("remotestate", flag.ExitOnError)
 	remotestate.FlagSet = remotestateCmd
 	remotestate.AppName = remotestateCmd.String("app-name", "", "Application name")
 	remotestate.ConfigPath = remotestateCmd.String("config-path", "config.tf", "Path to generate the config file")
@@ -36,13 +43,7 @@ func main() {
 	remotestate.LockID = remotestateCmd.String("lock-id", "", "Unique ID of the state lock service")
 	remotestate.Cleanup = remotestateCmd.Bool("cleanup-local", true, "Whether to remove existing state files after porting to remote")
 	remotestate.NonManual = remotestateCmd.Bool("script-invocation", false, "Whether the command was run by an automated script")
-
-	var cmds = map[string]Opt{
-		"debug":       debug,
-		"validate":    validate,
-		"format":      format,
-		"remotestate": remotestate,
-	}
+	cmds["remotestate"] = remotestate
 
 	// verify that a subcommand is present
 	// os.Args[0] = main cmd
@@ -134,6 +135,15 @@ func (c *ValidateCmd) Validate() error { return nil }
 
 // Validate validates all flags/arguments for the 'remotestate' subcommand
 func (c *RemoteStateCmd) Validate() error {
+	// required flags
+	if (*c.AppName == "") ||
+		(*c.StorageID == "") ||
+		(*c.StorageKey == "") ||
+		(*c.StorageRg == "") ||
+		(*c.LockID == "") {
+		c.FlagSet.PrintDefaults()
+		os.Exit(1)
+	}
 	return nil
 }
 
@@ -154,6 +164,7 @@ func (c *ValidateCmd) Handle() error {
 
 // Handle (re)configures the main backend with the supplied arguments
 func (c *RemoteStateCmd) Handle() error {
+	// the configuration block for the 'default' workspace's state backend.
 	cfg := fmt.Sprintf(
 		`# [%s] main remote state backend
 terraform {
