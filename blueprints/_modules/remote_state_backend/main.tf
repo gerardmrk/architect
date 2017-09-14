@@ -12,7 +12,7 @@ resource "aws_dynamodb_table" "iac_state_lock" {
   hash_key = "LockID"
 
   lifecycle {
-    prevent_destroy = true
+    prevent_destroy = false
   }
 
   attribute {
@@ -33,7 +33,7 @@ resource "aws_s3_bucket" "iac_state_access_logs" {
   acl    = "log-delivery-write"
 
   lifecycle {
-    prevent_destroy = true
+    prevent_destroy = false
   }
 
   lifecycle_rule {
@@ -70,7 +70,7 @@ resource "aws_s3_bucket" "iac_state_storage" {
   request_payer = "Requester"
 
   lifecycle {
-    prevent_destroy = true
+    prevent_destroy = false
   }
 
   versioning {

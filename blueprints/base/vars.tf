@@ -8,7 +8,7 @@ variable "cloud_secret_key" {
   description = "Secret access key of CSP"
 }
 
-variable "cloud_region" {
+variable "cloud_region_code" {
   type        = "string"
   description = "Region to create your cloud services and resources in"
   default     = "us-east-1"

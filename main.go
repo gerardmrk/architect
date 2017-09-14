@@ -187,7 +187,7 @@ terraform {
 
 	// execute 'terraform init -reconfigure -force-copy' to reinitialize
 	// and move the local copy to the remote state
-	cmd := exec.Command("terraform", "init", "-reconfigure", "-force-copy")
+	cmd := exec.Command("terraform", "init", "-force-copy")
 
 	out, err := cmd.Output()
 
