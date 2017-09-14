@@ -4,7 +4,7 @@ output "state_locker_id" {
 }
 
 output "state_logs_storage_id" {
-  value = "${aws_s3_bucket.iac_state_access_logs.id}"
+  value       = "${aws_s3_bucket.iac_state_access_logs.id}"
   description = "Remote state access logs storage ID"
 }
 
