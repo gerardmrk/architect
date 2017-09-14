@@ -11,7 +11,6 @@ variable "cloud_secret_key" {
 variable "cloud_region_code" {
   type        = "string"
   description = "Region to create your cloud services and resources in"
-  default     = "us-east-1"
 }
 
 variable "app_name" {

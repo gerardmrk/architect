@@ -48,7 +48,7 @@ resource "aws_s3_bucket" "global_logs_storage" {
   acl    = "log-delivery-write"
 
   lifecycle {
-    prevent_destroy = true
+    prevent_destroy = false
   }
 
   # Retention rule for debugging logs (tmp/*)
@@ -94,7 +94,7 @@ resource "aws_dynamodb_table" "iac_state_lock_svc" {
   hash_key = "LockID"
 
   lifecycle {
-    prevent_destroy = true
+    prevent_destroy = false
   }
 
   attribute {
@@ -112,7 +112,7 @@ resource "aws_s3_bucket" "iac_state_storage" {
   request_payer = "Requester"
 
   lifecycle {
-    prevent_destroy = true
+    prevent_destroy = false
   }
 
   versioning {
