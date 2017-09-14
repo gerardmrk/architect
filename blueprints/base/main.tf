@@ -54,9 +54,9 @@ resource "aws_s3_bucket" "global_logs_storage" {
   # Retention rule for debugging logs (tmp/*)
   lifecycle_rule {
     id      = "${local.logs_storage_id}-tmp"
+    tags    = "${local.global_tags}"
     prefix  = "${local.tmp_logs_prefix}"
     enabled = true
-    tags    = "${local.global_tags}"
 
     expiration {
       # permanently delete after 24 hours
@@ -123,30 +123,43 @@ resource "aws_s3_bucket" "iac_state_storage" {
     target_bucket = "${aws_s3_bucket.global_logs_storage.id}"
     target_prefix = "${local.iac_logs_prefix}"
   }
+}
 
-  # declare artificial dependency on the state-locking service to ensure it
-  # has already been created by the time the provisioner command is run.
+# Local config file for the default workspace's remote state backend
+resource "local_file" "remote_state_config" {
+  # generate new config file for remote backend
+  content = <<EOF
+# [${var.app_name}] main remote state backend
+terraform {
+  backend "s3" {
+    bucket         = "${aws_s3_bucket.iac_state_storage.id}"
+    key            = "base/terraform.tfstate"
+    region         = "${var.cloud_region_code}"
+    dynamodb_table = "${aws_dynamodb_table.iac_state_lock_svc.id}"
+  }
+}
+EOF
+
+  # write file to the current module directory
+  filename = "${path.module}/config.tf"
+}
+
+# Post config-update tasks
+resource "null_resource" "post_state_config_update" {
   depends_on = [
-    "aws_s3_bucket.global_logs_storage",
-    "aws_dynamodb_table.iac_state_lock_svc",
+    "local_file.remote_state_config",
   ]
 
-  # automate steps to
-  # 1. generate new config file for remote backend
-  # 2. reinitialize terraform in the current ('default') workspace
-  # 3. migrate existing local state to the remote backend
-  # 4. remove local state
+  # reinitialize state backend for the default workspace.
+  # this migrates the existing local state to remote
   provisioner "local-exec" {
-    command = <<EOF
-architect remotestate \
-  --config-path='config.tf' \
-  --app-name=${var.app_name} \
-  --storage-id=${aws_s3_bucket.iac_state_storage.id} \
-  --storage-key=base/terraform.tfstate \
-  --storage-region=${aws_s3_bucket.iac_state_storage.region} \
-  --lock-id=${aws_dynamodb_table.iac_state_lock_svc.id} \
-  --cleanup-local \
-  --script-invocation
-EOF
+    command    = "terraform init -force-copy"
+    on_failure = "continue"
+  }
+
+  # remove existing local state files
+  provisioner "local-exec" {
+    command    = "rm -rf terraform.tfstate terraform.tfstate.backup"
+    on_failure = "continue"
   }
 }
