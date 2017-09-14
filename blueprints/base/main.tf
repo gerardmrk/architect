@@ -6,45 +6,46 @@ provider "aws" {
 
 locals {
   # --- [META] ---
-  _trimmed    = "${trimspace(var.app_name)}"
-  _lowercased = "${lower(local._trimmed)}"
-  _titlecased = "${title(local._trimmed)}"
+  # app name prefix for service/resource IDs different conventions
+  _trimmed = "${trimspace(var.app_name)}"
 
-  # app name prefix for service/resource IDs that mandates (or by convention):
-
-  # > spinal-casing (e.g. S3: sleepless-iac-state-storage)
+  _lowercased        = "${lower(local._trimmed)}"
+  _titlecased        = "${title(local._trimmed)}"
   _spinalcase_prefix = "${replace(local._lowercased, " ", "-")}"
-  # > snake-casing (e.g. EC2:  sleepless_vault_node)
-  _snakecase_prefix = "${replace(local._lowercased, " ", "_")}"
-  # > pascal-casing (e.g. DynamoDB table: SleeplessIacStateLock)
+  _snakecase_prefix  = "${replace(local._lowercased, " ", "_")}"
   _pascalcase_prefix = "${replace(local._titlecased, " ", "")}"
 
-  # --- [MAIN VARIABLES] ---
-
+  # --- [RESOURCE TAGS] ---
   # resource tags for globally-scoped resources and services
   global_tags = {
     App     = "${var.app_name}"
     Scope   = "global"
     Creator = "iac"
   }
-  # resource tags for IAC-related resources and services
-  iac_tags = "${merge(local.global_tags, map("Ctx", "iac_mgmt"))}"
-  # resource tags for secrets-related resources and services
+
+  iac_tags     = "${merge(local.global_tags, map("Ctx", "iac_mgmt"))}"
   secrets_tags = "${merge(local.global_tags, map("Ctx", "secrets_mgmt"))}"
+
+  # --- [SERVICE IDS] ---
+
   # storage service ID for application logs
-  logs_storage_id = "${local._spinalcase_prefix}_application_logs"
-  # storage path for IAC MGMT logs
-  iac_logs_prefix = "iac"
-  # storage path for debugging logs
-  tmp_logs_prefix = "tmp"
+  logs_storage_id       = "${local._spinalcase_prefix}-application-logs"
+  iac_state_lock_svc_id = "${local._pascalcase_prefix}IacStateLockSvc"
+  iac_state_storage_id  = "${local._spinalcase_prefix}-iac-state"
+
+  # --- [RESOURCE IDS] ---
+
+  # logs storage sub-paths
+  tmp_logs_prefix = "tmp/"
+  iac_logs_prefix = "iac/"
 }
 
-# Global logs storage (currently: AWS S3 bucket)
+# Global logs storage service
 resource "aws_s3_bucket" "global_logs_storage" {
   bucket = "${local.logs_storage_id}"
+  tags   = "${local.global_tags}"
   region = "${var.cloud_region_code}"
   acl    = "log-delivery-write"
-  tags   = "${local.global_tags}"
 
   lifecycle {
     prevent_destroy = true
@@ -52,8 +53,8 @@ resource "aws_s3_bucket" "global_logs_storage" {
 
   # Retention rule for debugging logs (tmp/*)
   lifecycle_rule {
-    id      = "${local.logs_storage_id}_${local.tmp_logs_prefix}"
-    prefix  = "${local.tmp_logs_prefix}/"
+    id      = "${local.logs_storage_id}-tmp"
+    prefix  = "${local.tmp_logs_prefix}"
     enabled = true
     tags    = "${local.global_tags}"
 
@@ -65,10 +66,10 @@ resource "aws_s3_bucket" "global_logs_storage" {
 
   # Retention rule for IAC MGMT logs (iac/*)
   lifecycle_rule {
-    id      = "${local.logs_storage_id}_${local.iac_logs_prefix}"
-    prefix  = "${local.iac_logs_prefix}/"
-    enabled = true
+    id      = "${local.logs_storage_id}-iac"
     tags    = "${local.iac_tags}"
+    prefix  = "${local.iac_logs_prefix}"
+    enabled = true
 
     # move log to IA storage (S3 Infrequent-Access class) after 30 days
     transition {
@@ -83,10 +84,69 @@ resource "aws_s3_bucket" "global_logs_storage" {
   }
 }
 
-# Global remote IAC state backend (currently: AWS S3 Bucket, Amazon DynamoDB table)
-module "remote_state_backend" {
-  source = "../_modules/remote_state_backend"
+# Global remote IAC state-locking service
+resource "aws_dynamodb_table" "iac_state_lock_svc" {
+  name           = "${local.iac_state_lock_svc_id}"
+  tags           = "${local.iac_tags}"
+  read_capacity  = 4
+  write_capacity = 4
 
-  app_name = "${var.app_name}"
-  region   = "${var.cloud_region_code}"
+  hash_key = "LockID"
+
+  lifecycle {
+    prevent_destroy = true
+  }
+
+  attribute {
+    name = "LockID"
+    type = "S"
+  }
+}
+
+# Global remote IAC state storage
+resource "aws_s3_bucket" "iac_state_storage" {
+  bucket        = "${local.iac_state_storage_id}"
+  tags          = "${local.iac_tags}"
+  acl           = "private"
+  region        = "${var.cloud_region_code}"
+  request_payer = "Requester"
+
+  lifecycle {
+    prevent_destroy = true
+  }
+
+  versioning {
+    enabled = true
+  }
+
+  logging {
+    target_bucket = "${aws_s3_bucket.global_logs_storage.id}"
+    target_prefix = "${local.iac_logs_prefix}"
+  }
+
+  # declare artificial dependency on the state-locking service to ensure it
+  # has already been created by the time the provisioner command is run.
+  depends_on = [
+    "aws_s3_bucket.global_logs_storage",
+    "aws_dynamodb_table.iac_state_lock_svc",
+  ]
+
+  # automate steps to
+  # 1. generate new config file for remote backend
+  # 2. reinitialize terraform in the current ('default') workspace
+  # 3. migrate existing local state to the remote backend
+  # 4. remove local state
+  provisioner "local-exec" {
+    command = <<EOF
+architect remotestate \
+  --config-path='config.tf' \
+  --app-name=${var.app_name} \
+  --storage-id=${aws_s3_bucket.iac_state_storage.id} \
+  --storage-key=base/terraform.tfstate \
+  --storage-region=${aws_s3_bucket.iac_state_storage.region} \
+  --lock-id=${aws_dynamodb_table.iac_state_lock_svc.id} \
+  --cleanup-local \
+  --script-invocation
+EOF
+  }
 }
