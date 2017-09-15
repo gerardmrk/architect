@@ -17,3 +17,9 @@ variable "app_name" {
   type        = "string"
   description = "Name of the app to prefix to each resource identifier"
 }
+
+variable "small_team_size" {
+  type        = "string"
+  description = "Used to determine HL attrs for certain svcs (< 5 devs)"
+  default     = "true"
+}

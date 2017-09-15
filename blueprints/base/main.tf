@@ -6,7 +6,7 @@ provider "aws" {
 
 locals {
   # --- [META] ---
-  # app name prefix for service/resource IDs different conventions
+  # app name prefix for service/resource IDs of different conventions
   _trimmed = "${trimspace(var.app_name)}"
 
   _lowercased        = "${lower(local._trimmed)}"
@@ -20,11 +20,11 @@ locals {
   global_tags = {
     App     = "${var.app_name}"
     Scope   = "global"
-    Creator = "iac"
+    CreatedBy = "iac"
   }
 
-  iac_tags     = "${merge(local.global_tags, map("Ctx", "iac_mgmt"))}"
-  secrets_tags = "${merge(local.global_tags, map("Ctx", "secrets_mgmt"))}"
+  iac_tags     = "${merge(local.global_tags, map("Context", "iac_mgmt"))}"
+  secrets_tags = "${merge(local.global_tags, map("Context", "secrets_mgmt"))}"
 
   # --- [SERVICE IDS] ---
 
