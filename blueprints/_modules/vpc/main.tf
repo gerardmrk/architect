@@ -8,13 +8,13 @@ locals {
 }
 
 # List all available availability zones from the region
-data "aws_availability_zones" "main" {}
+data "aws_availability_zones" "mod" {}
 
 # ------------------------------------------------------------------------------
 # [STEP 01] Create the VPC
 # ------------------------------------------------------------------------------
 # AWS VPC
-resource "aws_vpc" "main" {
+resource "aws_vpc" "mod" {
   cidr_block           = "${var.cidr_block}"
   instance_tenancy     = "${var.tenancy_type}"
   enable_dns_support   = true
@@ -28,76 +28,76 @@ resource "aws_vpc" "main" {
 # ------------------------------------------------------------------------------
 # private subnet [AZ a] [netmask /19] [available IPv4s 8187]
 resource "aws_subnet" "a_private" {
-  vpc_id            = "${aws_vpc.main.id}"
-  availability_zone = "${data.aws_availability_zones.main.names[0]}"
-  cidr_block        = "${cidrsubnet(aws_vpc.main.cidr_block, 3, 0)}"
+  vpc_id            = "${aws_vpc.mod.id}"
+  availability_zone = "${data.aws_availability_zones.mod.names[0]}"
+  cidr_block        = "${cidrsubnet(aws_vpc.mod.cidr_block, 3, 0)}"
   tags              = "${merge(local.common_tags, map("Name", "${local.name}-a-priv"))}"
 }
 
 # public subnet [AZ a] [netmask /20] [available IPv4s 4091]
 resource "aws_subnet" "a_public" {
-  vpc_id            = "${aws_vpc.main.id}"
-  availability_zone = "${data.aws_availability_zones.main.names[0]}"
-  cidr_block        = "${cidrsubnet(aws_vpc.main.cidr_block, 4, 2)}"
+  vpc_id            = "${aws_vpc.mod.id}"
+  availability_zone = "${data.aws_availability_zones.mod.names[0]}"
+  cidr_block        = "${cidrsubnet(aws_vpc.mod.cidr_block, 4, 2)}"
   tags              = "${merge(local.common_tags, map("Name", "${local.name}-a-pub"))}"
 }
 
 # private subnet [AZ b] [netmask /19] [available IPv4s 8187]
 resource "aws_subnet" "b_private" {
-  vpc_id            = "${aws_vpc.main.id}"
-  availability_zone = "${data.aws_availability_zones.main.names[1]}"
-  cidr_block        = "${cidrsubnet(aws_vpc.main.cidr_block, 3, 2)}"
+  vpc_id            = "${aws_vpc.mod.id}"
+  availability_zone = "${data.aws_availability_zones.mod.names[1]}"
+  cidr_block        = "${cidrsubnet(aws_vpc.mod.cidr_block, 3, 2)}"
   tags              = "${merge(local.common_tags, map("Name", "${local.name}-b-priv"))}"
 }
 
 # public subnet [AZ b] [netmask /20] [available IPv4s 4091]
 resource "aws_subnet" "b_public" {
-  vpc_id            = "${aws_vpc.main.id}"
-  availability_zone = "${data.aws_availability_zones.main.names[1]}"
-  cidr_block        = "${cidrsubnet(aws_vpc.main.cidr_block, 4, 6)}"
+  vpc_id            = "${aws_vpc.mod.id}"
+  availability_zone = "${data.aws_availability_zones.mod.names[1]}"
+  cidr_block        = "${cidrsubnet(aws_vpc.mod.cidr_block, 4, 6)}"
   tags              = "${merge(local.common_tags, map("Name", "${local.name}-b-pub"))}"
 }
 
 # private subnet [AZ c] [netmask /19] [available IPv4s 8187]
 resource "aws_subnet" "c_private" {
-  vpc_id            = "${aws_vpc.main.id}"
-  availability_zone = "${data.aws_availability_zones.main.names[2]}"
-  cidr_block        = "${cidrsubnet(aws_vpc.main.cidr_block, 3, 4)}"
+  vpc_id            = "${aws_vpc.mod.id}"
+  availability_zone = "${data.aws_availability_zones.mod.names[2]}"
+  cidr_block        = "${cidrsubnet(aws_vpc.mod.cidr_block, 3, 4)}"
   tags              = "${merge(local.common_tags, map("Name", "${local.name}-c-priv"))}"
 }
 
 # public subnet [AZ c] [netmask /20] [available IPv4s 4091]
 resource "aws_subnet" "c_public" {
-  vpc_id            = "${aws_vpc.main.id}"
-  availability_zone = "${data.aws_availability_zones.main.names[2]}"
-  cidr_block        = "${cidrsubnet(aws_vpc.main.cidr_block, 4, 10)}"
+  vpc_id            = "${aws_vpc.mod.id}"
+  availability_zone = "${data.aws_availability_zones.mod.names[2]}"
+  cidr_block        = "${cidrsubnet(aws_vpc.mod.cidr_block, 4, 10)}"
   tags              = "${merge(local.common_tags, map("Name", "${local.name}-c-pub"))}"
 }
 
 # ------------------------------------------------------------------------------
 # [STEP 03] Create the VPC's internet gateway
 # ------------------------------------------------------------------------------
-resource "aws_internet_gateway" "main" {
-  vpc_id = "${aws_vpc.main.id}"
+resource "aws_internet_gateway" "mod" {
+  vpc_id = "${aws_vpc.mod.id}"
   tags   = "${merge(local.common_tags, map("Name", local.name))}"
 }
 
 # ------------------------------------------------------------------------------
 # [STEP 04] Create an elastic IP address for the VPC's NAT gateway
 # ------------------------------------------------------------------------------
-resource "aws_eip" "main" {
+resource "aws_eip" "mod" {
   vpc = true
 }
 
 # ------------------------------------------------------------------------------
-# [STEP 05] Create the VPC's main NAT gateway
+# [STEP 05] Create the VPC's NAT gateway
 # ------------------------------------------------------------------------------
-resource "aws_nat_gateway" "main" {
+resource "aws_nat_gateway" "mod" {
   # declare artificial dependency on the internet gateway resource
-  depends_on = ["aws_internet_gateway.main"]
+  depends_on = ["aws_internet_gateway.mod"]
 
   # the NAT requires an elastic IP for rerouting requests to the private subnets
-  allocation_id = "${aws_eip.main.id}"
+  allocation_id = "${aws_eip.mod.id}"
 
   # the NAT has to sit in a public subnet; we'll put it in 'a_public'
   subnet_id = "${aws_subnet.a_public.id}"
@@ -112,13 +112,13 @@ resource "aws_nat_gateway" "main" {
 # ------------------------------------------------------------------------------
 # Use the default route table (generated by the VPC) for the private subnets
 resource "aws_default_route_table" "private" {
-  default_route_table_id = "${aws_vpc.main.default_route_table_id}"
+  default_route_table_id = "${aws_vpc.mod.default_route_table_id}"
 
   route {
     cidr_block = "0.0.0.0/0"
 
     # Point non-local traffic from the private subnets to the NAT gateway.
-    nat_gateway_id = "${aws_nat_gateway.main.id}"
+    nat_gateway_id = "${aws_nat_gateway.mod.id}"
   }
 
   tags = "${merge(local.common_tags, map("Name", "${local.name}-private"))}"
@@ -126,13 +126,13 @@ resource "aws_default_route_table" "private" {
 
 # Create another route table for the public subnets
 resource "aws_route_table" "public" {
-  vpc_id = "${aws_vpc.main.id}"
+  vpc_id = "${aws_vpc.mod.id}"
 
   route {
     cidr_block = "0.0.0.0/0"
 
     # Point non-local traffic to the internet gateway.
-    gateway_id = "${aws_internet_gateway.main.id}"
+    gateway_id = "${aws_internet_gateway.mod.id}"
   }
 
   tags = "${merge(local.common_tags, map("Name", "${local.name}-public"))}"
@@ -175,8 +175,8 @@ resource "aws_route_table_association" "c_public" {
 # [STEP 08] Configure VPC's security group (first line of defense)
 # ------------------------------------------------------------------------------
 # Bring the default security group (generated by the VPC) under our control.
-resource "aws_default_security_group" "main" {
-  vpc_id = "${aws_vpc.main.id}"
+resource "aws_default_security_group" "mod" {
+  vpc_id = "${aws_vpc.mod.id}"
 
   ingress {
     protocol  = -1
@@ -199,8 +199,8 @@ resource "aws_default_security_group" "main" {
 # [STEP 09] Configure VPC's network ACL (second line of defense)
 # ------------------------------------------------------------------------------
 # Bring the default network ACL (generated by the VPC) under our control.
-resource "aws_default_network_acl" "main" {
-  default_network_acl_id = "${aws_vpc.main.default_network_acl_id}"
+resource "aws_default_network_acl" "mod" {
+  default_network_acl_id = "${aws_vpc.mod.default_network_acl_id}"
 
   ingress {
     protocol   = -1
