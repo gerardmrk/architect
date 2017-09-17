@@ -5,8 +5,11 @@ provider "aws" {
 }
 
 module "vpc" {
-  source = "../_modules/vpc"
-  name   = "sleepless_vpc"
-  app    = "sleepless"
-  env    = "development"
+  source       = "../_modules/vpc"
+  app          = "sleepless"
+  env          = "development"
+  cidr_block   = "10.0.0.0/16"
+  tenancy_type = "default"
+  ssh_port     = 22
+  ssh_ips      = ["0.0.0.0/0"]
 }

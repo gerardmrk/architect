@@ -1,7 +1,3 @@
-variable "name" {
-  description = "Human-readable name of the VPC"
-}
-
 variable "app" {
   description = "Application name for resource-grouping"
 }
@@ -18,4 +14,15 @@ variable "cidr_block" {
 variable "tenancy_type" {
   description = "VPC tenancy type (default or dedicated)"
   default     = "default"
+}
+
+variable "ssh_port" {
+  description = "SSH port number for any server instances"
+  default     = 22
+}
+
+variable "ssh_ips" {
+  type        = "list"
+  description = "List of allowed IPs for SSH"
+  default     = ["0.0.0.0/0"]
 }

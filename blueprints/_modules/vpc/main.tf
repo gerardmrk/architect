@@ -17,59 +17,59 @@ resource "aws_vpc" "main" {
   enable_dns_support   = true
   enable_dns_hostnames = false
 
-  tags = "${merge(local.common_tags, map("Name", var.name))}"
+  tags = "${merge(local.common_tags, map("Name", var.app))}"
 }
 
 # ------------------------------------------------------------------------------
 # [STEP 02] Create the VPC's subnetworks
 # ------------------------------------------------------------------------------
 # private subnet [AZ a]
-resource "aws_subnet" "private_a" {
+resource "aws_subnet" "a_private" {
   vpc_id            = "${aws_vpc.main.id}"
   availability_zone = "${data.aws_availability_zones.main.names[0]}"
   cidr_block        = "${cidrsubnet(aws_vpc.main.cidr_block, 3, 0)}"
 
-  tags = "${merge(local.common_tags, map("Name", "${var.app}_private_a"))}"
+  tags = "${merge(local.common_tags, map("Name", "${var.app}_a_private"))}"
 }
 
 # public subnet [AZ a]
-resource "aws_subnet" "public_a" {
+resource "aws_subnet" "a_public" {
   vpc_id            = "${aws_vpc.main.id}"
   availability_zone = "${data.aws_availability_zones.main.names[0]}"
   cidr_block        = "${cidrsubnet(aws_vpc.main.cidr_block, 4, 2)}"
-  tags              = "${merge(local.common_tags, map("Name", "${var.app}_public_a"))}"
+  tags              = "${merge(local.common_tags, map("Name", "${var.app}_a_public"))}"
 }
 
 # private subnet [AZ b]
-resource "aws_subnet" "private_b" {
+resource "aws_subnet" "b_private" {
   vpc_id            = "${aws_vpc.main.id}"
   availability_zone = "${data.aws_availability_zones.main.names[1]}"
   cidr_block        = "${cidrsubnet(aws_vpc.main.cidr_block, 3, 2)}"
-  tags              = "${merge(local.common_tags, map("Name", "${var.app}_private_b"))}"
+  tags              = "${merge(local.common_tags, map("Name", "${var.app}_b_private"))}"
 }
 
 # public subnet [AZ b]
-resource "aws_subnet" "public_b" {
+resource "aws_subnet" "b_public" {
   vpc_id            = "${aws_vpc.main.id}"
   availability_zone = "${data.aws_availability_zones.main.names[1]}"
   cidr_block        = "${cidrsubnet(aws_vpc.main.cidr_block, 4, 6)}"
-  tags              = "${merge(local.common_tags, map("Name", "${var.app}_public_b"))}"
+  tags              = "${merge(local.common_tags, map("Name", "${var.app}_b_public"))}"
 }
 
 # private subnet [AZ c]
-resource "aws_subnet" "private_c" {
+resource "aws_subnet" "c_private" {
   vpc_id            = "${aws_vpc.main.id}"
   availability_zone = "${data.aws_availability_zones.main.names[2]}"
   cidr_block        = "${cidrsubnet(aws_vpc.main.cidr_block, 3, 4)}"
-  tags              = "${merge(local.common_tags, map("Name", "${var.app}_private_c"))}"
+  tags              = "${merge(local.common_tags, map("Name", "${var.app}_c_private"))}"
 }
 
 # public subnet [AZ c]
-resource "aws_subnet" "public_c" {
+resource "aws_subnet" "c_public" {
   vpc_id            = "${aws_vpc.main.id}"
   availability_zone = "${data.aws_availability_zones.main.names[2]}"
   cidr_block        = "${cidrsubnet(aws_vpc.main.cidr_block, 4, 10)}"
-  tags              = "${merge(local.common_tags, map("Name", "${var.app}_public_c"))}"
+  tags              = "${merge(local.common_tags, map("Name", "${var.app}_c_public"))}"
 }
 
 # ------------------------------------------------------------------------------
@@ -77,7 +77,7 @@ resource "aws_subnet" "public_c" {
 # ------------------------------------------------------------------------------
 resource "aws_internet_gateway" "main" {
   vpc_id = "${aws_vpc.main.id}"
-  tags   = "${merge(local.common_tags, map("Name", var.name))}"
+  tags   = "${merge(local.common_tags, map("Name", var.app))}"
 }
 
 # ------------------------------------------------------------------------------
@@ -97,8 +97,12 @@ resource "aws_nat_gateway" "main" {
   # the NAT requires an elastic IP for rerouting requests to the private subnets
   allocation_id = "${aws_eip.main.id}"
 
-  # the NAT has to sit in a public subnet; we'll put it in 'public_a'
-  subnet_id = "${aws_subnet.public_a.id}"
+  # the NAT has to sit in a public subnet; we'll put it in 'a_public'
+  subnet_id = "${aws_subnet.a_public.id}"
+
+  # TODO: terraform v0.10.5 supports tags for AWS NAT Gateway, but validation
+  # for this resource block is still stuck a patch behind. Enable this ASAP
+  # tags   = "${merge(local.common_tags, map("Name", var.app))}"
 }
 
 # ------------------------------------------------------------------------------
@@ -109,17 +113,13 @@ resource "aws_default_route_table" "private" {
   default_route_table_id = "${aws_vpc.main.default_route_table_id}"
 
   route {
-    
-  }
-
-  route {
     cidr_block = "0.0.0.0/0"
 
-    # Point public-destined traffic from the private subnets to the NAT gateway.
+    # Point non-local traffic from the private subnets to the NAT gateway.
     nat_gateway_id = "${aws_nat_gateway.main.id}"
   }
 
-  tags = "${merge(local.common_tags, map("Name", "${var.name}_private"))}"
+  tags = "${merge(local.common_tags, map("Name", "${var.app}_private"))}"
 }
 
 # Create another route table for the public subnets
@@ -129,43 +129,43 @@ resource "aws_route_table" "public" {
   route {
     cidr_block = "0.0.0.0/0"
 
-    # Point traffic to the internet gateway.
+    # Point non-local traffic to the internet gateway.
     gateway_id = "${aws_internet_gateway.main.id}"
   }
 
-  tags = "${merge(local.common_tags, map("Name", "${var.name}_public"))}"
+  tags = "${merge(local.common_tags, map("Name", "${var.app}_public"))}"
 }
 
 # ------------------------------------------------------------------------------
 # [STEP 07] Associate subnets with their respective route tables
 # ------------------------------------------------------------------------------
-resource "aws_route_table_association" "private_a" {
-  subnet_id      = "${aws_subnet.private_a.id}"
+resource "aws_route_table_association" "a_private" {
+  subnet_id      = "${aws_subnet.a_private.id}"
   route_table_id = "${aws_default_route_table.private.id}"
 }
 
-resource "aws_route_table_association" "private_b" {
-  subnet_id      = "${aws_subnet.private_b.id}"
+resource "aws_route_table_association" "b_private" {
+  subnet_id      = "${aws_subnet.b_private.id}"
   route_table_id = "${aws_default_route_table.private.id}"
 }
 
-resource "aws_route_table_association" "private_c" {
-  subnet_id      = "${aws_subnet.private_c.id}"
+resource "aws_route_table_association" "c_private" {
+  subnet_id      = "${aws_subnet.c_private.id}"
   route_table_id = "${aws_default_route_table.private.id}"
 }
 
-resource "aws_route_table_association" "public_a" {
-  subnet_id      = "${aws_subnet.public_a.id}"
+resource "aws_route_table_association" "a_public" {
+  subnet_id      = "${aws_subnet.a_public.id}"
   route_table_id = "${aws_route_table.public.id}"
 }
 
-resource "aws_route_table_association" "public_b" {
-  subnet_id      = "${aws_subnet.public_b.id}"
+resource "aws_route_table_association" "b_public" {
+  subnet_id      = "${aws_subnet.b_public.id}"
   route_table_id = "${aws_route_table.public.id}"
 }
 
-resource "aws_route_table_association" "public_c" {
-  subnet_id      = "${aws_subnet.public_c.id}"
+resource "aws_route_table_association" "c_public" {
+  subnet_id      = "${aws_subnet.c_public.id}"
   route_table_id = "${aws_route_table.public.id}"
 }
 
@@ -173,7 +173,66 @@ resource "aws_route_table_association" "public_c" {
 # [STEP 08] Configure VPC's security groups (firewall)
 # ------------------------------------------------------------------------------
 # Bring the default security group (generated by the VPC) under our control.
+resource "aws_default_security_group" "main" {
+  vpc_id = "${aws_vpc.main.id}"
 
+  ingress {
+    protocol  = -1
+    self      = true
+    from_port = 0
+    to_port   = 0
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = "${merge(local.common_tags, map("Name", var.app))}"
+}
+
+# Basic security group for a standard Unix server
+resource "aws_security_group" "server_basic" {
+  vpc_id      = "${aws_vpc.main.id}"
+  name        = "server_basic"
+  description = "Basic rules for a standard Unix server"
+
+  # allow http
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # allow https
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # allow SSH
+  ingress {
+    from_port   = "${var.ssh_port}"
+    to_port     = "${var.ssh_port}"
+    protocol    = "tcp"
+    cidr_blocks = "${var.ssh_ips}"
+  }
+
+  # allow all outbound traffic for any protocol
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = "${merge(local.common_tags, map("Name", var.app))}"
+}
 
 # ------------------------------------------------------------------------------
 # [STEP 09] Configure VPC's network ACL
@@ -201,5 +260,5 @@ resource "aws_default_network_acl" "main" {
     to_port    = 0
   }
 
-  tags = "${merge(local.common_tags, map("Name", var.name))}"
+  tags = "${merge(local.common_tags, map("Name", var.app))}"
 }
