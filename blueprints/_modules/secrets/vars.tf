@@ -3,17 +3,16 @@
  ---------------------------------------------------------------------------- */
 
 variable "binary_download_url" {
-  default = "https://releases.hashicorp.com/vault/0.8.2/vault_0.8.2_linux_amd64.zip"
+  default     = "https://releases.hashicorp.com/vault/0.8.2/vault_0.8.2_linux_amd64.zip"
   description = "Download URL for the Vault binary"
 }
-
 
 variable "secrets_config" {
   description = "Configuration (text) for Vault"
 }
 
 variable "additional_cmds" {
-  default = ""
+  default     = ""
   description = "Additional commands to run in the install script"
 }
 

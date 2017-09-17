@@ -18,8 +18,8 @@ locals {
   # --- [RESOURCE TAGS] ---
   # resource tags for globally-scoped resources and services
   global_tags = {
-    App     = "${var.app_name}"
-    Scope   = "global"
+    App       = "${var.app_name}"
+    Scope     = "global"
     CreatedBy = "iac"
   }
 
