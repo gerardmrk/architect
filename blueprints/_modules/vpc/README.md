@@ -1,14 +1,15 @@
-# VPC Module
+# VPC
 
-This module creates a VPC (plus related resources) that caters to non-complex scenarios, yet while following best-practices that makes the VPC robust and future-proofed.
+## Sanity Check
 
-The setup is ideal for most usecases if you're not a large-sized multinational business (in which case you probably shouldn't be using this anyways), i.e. serious side-projects, startup-scenarios, etc..
+22 resources and services total
 
-## Restrictions/Limitations
-
-- The module does not account for VPC-peering or VPN-connections to non-AWS networks, so choose a CIDR range accordingly (VPCs with overlapping CIDRs cannot be peered).
-
-- The region (inferred from the provider block of the calling template) must have has at least 3 availability zones (some regions only have 2 AZs).
-
-## Resources & Services
-
+- 1 vpc
+- 1 elastic IP
+- 1 NAT gateway
+- 1 internet gateway
+- 2 security groups
+- 2 network ACLs
+- 2 route tables
+- 6 subnets
+- 6 route table associations

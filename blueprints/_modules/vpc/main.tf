@@ -1,10 +1,13 @@
 locals {
+  name = "${var.prefix_env == "true" ? "${var.app}-${var.env}" : var.app}"
+
   common_tags = {
     App = "${var.app}"
     Env = "${var.env}"
   }
 }
 
+# List all available availability zones from the region
 data "aws_availability_zones" "main" {}
 
 # ------------------------------------------------------------------------------
@@ -17,59 +20,58 @@ resource "aws_vpc" "main" {
   enable_dns_support   = true
   enable_dns_hostnames = false
 
-  tags = "${merge(local.common_tags, map("Name", var.app))}"
+  tags = "${merge(local.common_tags, map("Name", local.name))}"
 }
 
 # ------------------------------------------------------------------------------
 # [STEP 02] Create the VPC's subnetworks
 # ------------------------------------------------------------------------------
-# private subnet [AZ a]
+# private subnet [AZ a] [netmask /19] [available IPv4s 8187]
 resource "aws_subnet" "a_private" {
   vpc_id            = "${aws_vpc.main.id}"
   availability_zone = "${data.aws_availability_zones.main.names[0]}"
   cidr_block        = "${cidrsubnet(aws_vpc.main.cidr_block, 3, 0)}"
-
-  tags = "${merge(local.common_tags, map("Name", "${var.app}_a_private"))}"
+  tags              = "${merge(local.common_tags, map("Name", "${local.name}-a-priv"))}"
 }
 
-# public subnet [AZ a]
+# public subnet [AZ a] [netmask /20] [available IPv4s 4091]
 resource "aws_subnet" "a_public" {
   vpc_id            = "${aws_vpc.main.id}"
   availability_zone = "${data.aws_availability_zones.main.names[0]}"
   cidr_block        = "${cidrsubnet(aws_vpc.main.cidr_block, 4, 2)}"
-  tags              = "${merge(local.common_tags, map("Name", "${var.app}_a_public"))}"
+  tags              = "${merge(local.common_tags, map("Name", "${local.name}-a-pub"))}"
 }
 
-# private subnet [AZ b]
+# private subnet [AZ b] [netmask /19] [available IPv4s 8187]
 resource "aws_subnet" "b_private" {
   vpc_id            = "${aws_vpc.main.id}"
   availability_zone = "${data.aws_availability_zones.main.names[1]}"
   cidr_block        = "${cidrsubnet(aws_vpc.main.cidr_block, 3, 2)}"
-  tags              = "${merge(local.common_tags, map("Name", "${var.app}_b_private"))}"
+  tags              = "${merge(local.common_tags, map("Name", "${local.name}-b-priv"))}"
 }
 
-# public subnet [AZ b]
+# public subnet [AZ b] [netmask /20] [available IPv4s 4091]
 resource "aws_subnet" "b_public" {
   vpc_id            = "${aws_vpc.main.id}"
   availability_zone = "${data.aws_availability_zones.main.names[1]}"
   cidr_block        = "${cidrsubnet(aws_vpc.main.cidr_block, 4, 6)}"
-  tags              = "${merge(local.common_tags, map("Name", "${var.app}_b_public"))}"
+  tags              = "${merge(local.common_tags, map("Name", "${local.name}-b-pub"))}"
 }
 
-# private subnet [AZ c]
+# private subnet [AZ c] [netmask /19] [available IPv4s 8187]
 resource "aws_subnet" "c_private" {
   vpc_id            = "${aws_vpc.main.id}"
   availability_zone = "${data.aws_availability_zones.main.names[2]}"
   cidr_block        = "${cidrsubnet(aws_vpc.main.cidr_block, 3, 4)}"
-  tags              = "${merge(local.common_tags, map("Name", "${var.app}_c_private"))}"
+  tags              = "${merge(local.common_tags, map("Name", "${local.name}-c-priv"))}"
 }
 
-# public subnet [AZ c]
+# public subnet [AZ c] [netmask /20] [available IPv4s 4091]
 resource "aws_subnet" "c_public" {
   vpc_id            = "${aws_vpc.main.id}"
   availability_zone = "${data.aws_availability_zones.main.names[2]}"
   cidr_block        = "${cidrsubnet(aws_vpc.main.cidr_block, 4, 10)}"
-  tags              = "${merge(local.common_tags, map("Name", "${var.app}_c_public"))}"
+  tags              = "${merge(local.common_tags, map("Name", "${local.name}-c-pub"))}"
 }
 
 # ------------------------------------------------------------------------------
@@ -77,7 +79,7 @@ resource "aws_subnet" "c_public" {
 # ------------------------------------------------------------------------------
 resource "aws_internet_gateway" "main" {
   vpc_id = "${aws_vpc.main.id}"
-  tags   = "${merge(local.common_tags, map("Name", var.app))}"
+  tags   = "${merge(local.common_tags, map("Name", local.name))}"
 }
 
 # ------------------------------------------------------------------------------
@@ -102,7 +104,7 @@ resource "aws_nat_gateway" "main" {
 
   # TODO: terraform v0.10.5 supports tags for AWS NAT Gateway, but validation
   # for this resource block is still stuck a patch behind. Enable this ASAP
-  # tags   = "${merge(local.common_tags, map("Name", var.app))}"
+  # tags   = "${merge(local.common_tags, map("Name", local.name))}"
 }
 
 # ------------------------------------------------------------------------------
@@ -119,7 +121,7 @@ resource "aws_default_route_table" "private" {
     nat_gateway_id = "${aws_nat_gateway.main.id}"
   }
 
-  tags = "${merge(local.common_tags, map("Name", "${var.app}_private"))}"
+  tags = "${merge(local.common_tags, map("Name", "${local.name}-private"))}"
 }
 
 # Create another route table for the public subnets
@@ -133,7 +135,7 @@ resource "aws_route_table" "public" {
     gateway_id = "${aws_internet_gateway.main.id}"
   }
 
-  tags = "${merge(local.common_tags, map("Name", "${var.app}_public"))}"
+  tags = "${merge(local.common_tags, map("Name", "${local.name}-public"))}"
 }
 
 # ------------------------------------------------------------------------------
@@ -170,7 +172,7 @@ resource "aws_route_table_association" "c_public" {
 }
 
 # ------------------------------------------------------------------------------
-# [STEP 08] Configure VPC's security groups (firewall)
+# [STEP 08] Configure VPC's security group (first line of defense)
 # ------------------------------------------------------------------------------
 # Bring the default security group (generated by the VPC) under our control.
 resource "aws_default_security_group" "main" {
@@ -190,54 +192,12 @@ resource "aws_default_security_group" "main" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  tags = "${merge(local.common_tags, map("Name", var.app))}"
-}
-
-# Basic security group for a standard Unix server
-resource "aws_security_group" "server_basic" {
-  vpc_id      = "${aws_vpc.main.id}"
-  name        = "server_basic"
-  description = "Basic rules for a standard Unix server"
-
-  # allow http
-  ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  # allow https
-  ingress {
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  # allow SSH
-  ingress {
-    from_port   = "${var.ssh_port}"
-    to_port     = "${var.ssh_port}"
-    protocol    = "tcp"
-    cidr_blocks = "${var.ssh_ips}"
-  }
-
-  # allow all outbound traffic for any protocol
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = "${merge(local.common_tags, map("Name", var.app))}"
+  tags = "${merge(local.common_tags, map("Name", local.name))}"
 }
 
 # ------------------------------------------------------------------------------
-# [STEP 09] Configure VPC's network ACL
+# [STEP 09] Configure VPC's network ACL (second line of defense)
 # ------------------------------------------------------------------------------
-
 # Bring the default network ACL (generated by the VPC) under our control.
 resource "aws_default_network_acl" "main" {
   default_network_acl_id = "${aws_vpc.main.default_network_acl_id}"
@@ -260,5 +220,5 @@ resource "aws_default_network_acl" "main" {
     to_port    = 0
   }
 
-  tags = "${merge(local.common_tags, map("Name", var.app))}"
+  tags = "${merge(local.common_tags, map("Name", local.name))}"
 }
