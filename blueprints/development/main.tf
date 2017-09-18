@@ -31,7 +31,7 @@ module "secrets_dev" {
   env        = "${local.env}"
   prefix_env = "${local.prefix_env}"
 
-  vault_config       = ""
+  vault_config       = "${file("./vault_config.hcl")}"
   vault_install_cmds = ""
 
   server_image = "ami-e2021d81"

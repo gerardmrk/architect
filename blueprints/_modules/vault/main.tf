@@ -145,6 +145,7 @@ resource "aws_security_group" "server" {
 resource "aws_security_group" "load_balancer" {
   name        = "${local.name}-vault-load-balancer"
   description = "vault load balancer rules"
+  vpc_id      = "${var.vpc_id}"
 
   # HTTP traffic
   ingress {
