@@ -13,7 +13,7 @@ locals {
 # List all available availability zones from the region
 data "aws_availability_zones" "az_dev" {}
 
-module "vpc_dev" {
+module "network_dev" {
   source = "../_modules/vpc"
 
   app                = "${local.app}"
@@ -24,7 +24,7 @@ module "vpc_dev" {
   availability_zones = "${data.aws_availability_zones.az_dev.names}"
 }
 
-module "vault_dev" {
+module "secrets_dev" {
   source = "../_modules/vault"
 
   app        = "${local.app}"
@@ -36,13 +36,13 @@ module "vault_dev" {
 
   server_image = "ami-e2021d81"
   server_class = "t2.micro"
-  server_az    = "${data.aws_availability_zones.az_dev.names}"
+  server_az    = "${join(",", data.aws_availability_zones.az_dev.names)}"
 
   public_facing = "false"
   min_nodes     = 1
   max_nodes     = 3
-  subnet_ids    = "${module.vpc_dev.private_subnet_ids}"
-  vpc_id        = "${module.vpc_dev.vpc_id}"
+  subnet_ids    = "${module.network_dev.private_subnet_ids}"
+  vpc_id        = "${module.network_dev.vpc_id}"
 
   ssh_key_name = ""
   ssh_port     = 22

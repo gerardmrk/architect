@@ -53,7 +53,6 @@ variable "public_facing" {
 
 # this should reflect the 'public-facing' option: use public subnets if true
 variable "server_az" {
-  type        = "list"
   description = "Availability zones for the Vault instances (currently AWS region codes)"
 }
 
@@ -74,7 +73,6 @@ variable "max_nodes" {
 }
 
 variable "subnet_ids" {
-  type        = "list"
   description = "List of subnets for the Vault instances in (currently AWS VPC subnets)"
 }
 

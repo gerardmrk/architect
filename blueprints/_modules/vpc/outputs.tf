@@ -3,19 +3,11 @@ output "vpc_id" {
 }
 
 output "private_subnet_ids" {
-  value = [
-    "${aws_subnet.a_private.id}",
-    "${aws_subnet.b_private.id}",
-    "${aws_subnet.c_private.id}"
-  ]
+  value = "${aws_subnet.a_private.id},${aws_subnet.b_private.id},${aws_subnet.c_private.id}"
 }
 
 output "public_subnet_ids" {
-  value = [
-    "${aws_subnet.a_public.id}",
-    "${aws_subnet.b_public.id}",
-    "${aws_subnet.c_public.id}"
-  ]
+  value = "${aws_subnet.a_public.id},${aws_subnet.b_public.id},${aws_subnet.c_public.id}"
 }
 
 output "route_table_private_id" {
