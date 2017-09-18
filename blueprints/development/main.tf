@@ -31,7 +31,7 @@ module "vault_dev" {
   env        = "${local.env}"
   prefix_env = "${local.prefix_env}"
 
-  vault_config = ""
+  vault_config       = ""
   vault_install_cmds = ""
 
   server_image = "ami-e2021d81"
@@ -39,10 +39,10 @@ module "vault_dev" {
   server_az    = "${data.aws_availability_zones.az_dev.names}"
 
   public_facing = "false"
-  min_nodes  = 1
-  max_nodes  = 3
-  subnet_ids = "${module.vpc_dev.private_subnet_ids}"
-  vpc_id     = "${module.vpc_dev.vpc_id}"
+  min_nodes     = 1
+  max_nodes     = 3
+  subnet_ids    = "${module.vpc_dev.private_subnet_ids}"
+  vpc_id        = "${module.vpc_dev.vpc_id}"
 
   ssh_key_name = ""
   ssh_port     = 22

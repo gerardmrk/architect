@@ -7,82 +7,98 @@ locals {
   }
 }
 
-resource "template_file" "vault_install_script" {
+data "template_file" "vault_install_script" {
   template = "${file("${path.module}/scripts/vault.install.sh")}"
 
-  var {
-    download_url = "${var.vault_download_url}"
-    config       = "${var.vault_config}"
-    init_script = "${file("${path.module}/scripts/vault.init.sh")}"
+  vars {
+    download_url    = "${var.vault_download_url}"
+    config          = "${var.vault_config}"
     additional_cmds = "${var.vault_install_cmds}"
+    init_script     = "${file("${path.module}/scripts/vault.init.sh")}"
   }
 }
 
+# Individual server node configuration
 resource "aws_launch_configuration" "vault" {
+  name = "${local.name}-vault-lc"
+
   image_id        = "${var.server_image}"
   instance_type   = "${var.server_class}"
   key_name        = "${var.ssh_key_name}"
-  security_groups = []
-
-  tags = "${merge(local.common_tags, map("Name", "${local.name}-vault-lc"))}"
+  security_groups = ["${aws_security_group.server.id}"]
+  user_data       = "${data.template_file.vault_install_script.rendered}"
 }
 
+# Auto-scaling configuration
 resource "aws_autoscaling_group" "vault" {
-  name               = "${aws_launch_configuration.vault.name}"
-  availability_zones = "${var.server_az}"
-  min_size           = "${var.min_nodes}"
-  max_size           = "${var.max_nodes}"
+  name = "${local.name}-vault-asg"
 
-  tags = "${merge(local.common_tags, map("Name", "${local.name}-vault-asg"))}"
+  min_size         = "${var.min_nodes}"
+  max_size         = "${var.max_nodes}"
+  desired_capacity = "${var.min_nodes}"
+
+  health_check_type         = "EC2"
+  health_check_grace_period = 15
+
+  availability_zones   = "${var.server_az}"
+  load_balancers       = ["${aws_elb.vault.id}"]
+  vpc_zone_identifier  = "${var.subnet_ids}"
+  launch_configuration = "${aws_launch_configuration.vault.name}"
+
+  # tags = "${merge(local.common_tags, map(
+  #   "Name", local.name,
+  #   "propagate_at_launch", true
+  # ))}"
 }
 
 # Load balancer
 resource "aws_elb" "vault" {
-  name = "vault-elb"
+  name = "${local.name}-vault-elb"
 
   # ensure in-flight requests to unhealthy/deregistering nodes run to completion
-  connection_draining = true
+  connection_draining         = true
   connection_draining_timeout = 400
 
   # internal-facing nodes are not accessible by the internet (think carefully)
   internal = "${var.public_facing == "false" ? true : false}"
 
-  subnets = "${var.subnet_ids}"
-  security_groups = "${aws_security_groups.load_balancer.id}"
+  subnets         = "${var.subnet_ids}"
+  security_groups = ["${aws_security_group.load_balancer.id}"]
 
   # HTTP
   listener {
-    instance_port = 8200
+    instance_port     = 8200
     instance_protocol = "tcp"
-    lb_port = 80
-    lb_protocol = "tcp"
+    lb_port           = 80
+    lb_protocol       = "tcp"
   }
 
   # HTTPS
   listener {
-    instance_port = 8200
+    instance_port     = 8200
     instance_protocol = "tcp"
-    lb_port = 443
-    lb_protocol = "tcp"
+    lb_port           = 443
+    lb_protocol       = "tcp"
   }
 
   # healthchecking (endpoint exposed by Vault itself; thanks Hashicorp)
   health_check {
-    healthy_threshold = 2
+    healthy_threshold   = 2
     unhealthy_threshold = 3
-    timeout = 5
-    target = "${var.healthcheck_endpoint}"
-    interval = 20
+    timeout             = 5
+    target              = "${var.healthcheck_endpoint}"
+    interval            = 15
   }
-}
 
+  tags = "${merge(local.common_tags, map("Name", local.name))}"
+}
 
 # ------------------------------------------------------------------------------
 # SECURITY GROUPS
 # ------------------------------------------------------------------------------
 
 resource "aws_security_group" "server" {
-  name        = "vault-server"
+  name        = "${local.name}-vault-server"
   description = "vault servers rule"
   vpc_id      = "${var.vpc_id}"
 
@@ -114,7 +130,7 @@ resource "aws_security_group" "server" {
 }
 
 resource "aws_security_group" "load_balancer" {
-  name        = "vault-load-balancer"
+  name        = "${local.name}-vault-load-balancer"
   description = "vault load balancer rules"
 
   # HTTP traffic

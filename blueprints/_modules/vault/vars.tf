@@ -48,7 +48,7 @@ variable "server_class" {
 # important to consider: if this is for user-interactions (e.g. IAC secrets)
 variable "public_facing" {
   description = "Whether the nodes are internet-facing (publicly-resolvable IPs)"
-  default = "false"
+  default     = "false"
 }
 
 # this should reflect the 'public-facing' option: use public subnets if true
@@ -74,6 +74,7 @@ variable "max_nodes" {
 }
 
 variable "subnet_ids" {
+  type = "list"
   description = "List of subnets for the Vault instances in (currently AWS VPC subnets)"
 }
 
