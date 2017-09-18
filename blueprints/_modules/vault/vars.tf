@@ -45,13 +45,21 @@ variable "server_class" {
   description = "Server class/tier for the Vault instances (currently AWS EC2 instance types)"
 }
 
+# important to consider: if this is for user-interactions (e.g. IAC secrets)
+variable "public_facing" {
+  description = "Whether the nodes are internet-facing (publicly-resolvable IPs)"
+  default = "false"
+}
+
+# this should reflect the 'public-facing' option: use public subnets if true
 variable "server_az" {
   type        = "list"
   description = "Availability zones for the Vault instances (currently AWS region codes)"
 }
 
-variable "server_healthcheck" {
-  description = "Health-check endpoint for the Vault instances (currently for AWS ELB)"
+# https://www.vaultproject.io/api/system/health.html
+variable "healthcheck_endpoint" {
+  description = "Health-check endpoint for the Vault instances"
   default     = "HTTP:8200/v1/sys/health"
 }
 

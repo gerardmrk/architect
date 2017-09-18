@@ -5,7 +5,7 @@ set -e
 sudo apt-get update -y
 sudo apt-get install -y curl unzip
 
-# download vault into a tmp dir
+# download Vault
 curl -L "${download_url}" > /tmp/vault.zip
 
 # unzip and set permissions and ownership
@@ -27,7 +27,7 @@ ${init_script}
 EOF
 sudo mv /tmp/vault-init /etc/init/vault.conf
 
-# run additional commands if any
+# run any additional commands
 ${additional_cmds}
 
 # start Vault

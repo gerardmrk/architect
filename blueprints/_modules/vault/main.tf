@@ -36,11 +36,52 @@ resource "aws_autoscaling_group" "vault" {
   tags = "${merge(local.common_tags, map("Name", "${local.name}-vault-asg"))}"
 }
 
+# Load balancer
+resource "aws_elb" "vault" {
+  name = "vault-elb"
+
+  # ensure in-flight requests to unhealthy/deregistering nodes run to completion
+  connection_draining = true
+  connection_draining_timeout = 400
+
+  # internal-facing nodes are not accessible by the internet (think carefully)
+  internal = "${var.public_facing == "false" ? true : false}"
+
+  subnets = "${var.subnet_ids}"
+  security_groups = "${aws_security_groups.load_balancer.id}"
+
+  # HTTP
+  listener {
+    instance_port = 8200
+    instance_protocol = "tcp"
+    lb_port = 80
+    lb_protocol = "tcp"
+  }
+
+  # HTTPS
+  listener {
+    instance_port = 8200
+    instance_protocol = "tcp"
+    lb_port = 443
+    lb_protocol = "tcp"
+  }
+
+  # healthchecking (endpoint exposed by Vault itself; thanks Hashicorp)
+  health_check {
+    healthy_threshold = 2
+    unhealthy_threshold = 3
+    timeout = 5
+    target = "${var.healthcheck_endpoint}"
+    interval = 20
+  }
+}
+
+
 # ------------------------------------------------------------------------------
 # SECURITY GROUPS
 # ------------------------------------------------------------------------------
 
-resource "aws_security_group" "vault_server" {
+resource "aws_security_group" "server" {
   name        = "vault-server"
   description = "vault servers rule"
   vpc_id      = "${var.vpc_id}"
@@ -72,7 +113,7 @@ resource "aws_security_group" "vault_server" {
   tags = "${merge(local.common_tags, map("Name", "${local.name}-vault-ec2"))}"
 }
 
-resource "aws_security_group" "vault_load_balancer" {
+resource "aws_security_group" "load_balancer" {
   name        = "vault-load-balancer"
   description = "vault load balancer rules"
 

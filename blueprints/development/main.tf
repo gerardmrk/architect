@@ -38,6 +38,7 @@ module "vault_dev" {
   server_class = "t2.micro"
   server_az    = "${data.aws_availability_zones.az_dev.names}"
 
+  public_facing = "false"
   min_nodes  = 1
   max_nodes  = 3
   subnet_ids = "${module.vpc_dev.private_subnet_ids}"
