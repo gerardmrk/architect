@@ -7,9 +7,6 @@ locals {
   }
 }
 
-# List all available availability zones from the region
-data "aws_availability_zones" "mod" {}
-
 # ------------------------------------------------------------------------------
 # [STEP 01] Create the VPC
 # ------------------------------------------------------------------------------
@@ -29,7 +26,7 @@ resource "aws_vpc" "mod" {
 # private subnet [AZ a] [netmask /19] [available IPv4s 8187]
 resource "aws_subnet" "a_private" {
   vpc_id            = "${aws_vpc.mod.id}"
-  availability_zone = "${data.aws_availability_zones.mod.names[0]}"
+  availability_zone = "${var.availability_zones[0]}"
   cidr_block        = "${cidrsubnet(aws_vpc.mod.cidr_block, 3, 0)}"
   tags              = "${merge(local.common_tags, map("Name", "${local.name}-a-priv"))}"
 }
@@ -37,7 +34,7 @@ resource "aws_subnet" "a_private" {
 # public subnet [AZ a] [netmask /20] [available IPv4s 4091]
 resource "aws_subnet" "a_public" {
   vpc_id            = "${aws_vpc.mod.id}"
-  availability_zone = "${data.aws_availability_zones.mod.names[0]}"
+  availability_zone = "${var.availability_zones[0]}"
   cidr_block        = "${cidrsubnet(aws_vpc.mod.cidr_block, 4, 2)}"
   tags              = "${merge(local.common_tags, map("Name", "${local.name}-a-pub"))}"
 }
@@ -45,7 +42,7 @@ resource "aws_subnet" "a_public" {
 # private subnet [AZ b] [netmask /19] [available IPv4s 8187]
 resource "aws_subnet" "b_private" {
   vpc_id            = "${aws_vpc.mod.id}"
-  availability_zone = "${data.aws_availability_zones.mod.names[1]}"
+  availability_zone = "${var.availability_zones[1]}"
   cidr_block        = "${cidrsubnet(aws_vpc.mod.cidr_block, 3, 2)}"
   tags              = "${merge(local.common_tags, map("Name", "${local.name}-b-priv"))}"
 }
@@ -53,7 +50,7 @@ resource "aws_subnet" "b_private" {
 # public subnet [AZ b] [netmask /20] [available IPv4s 4091]
 resource "aws_subnet" "b_public" {
   vpc_id            = "${aws_vpc.mod.id}"
-  availability_zone = "${data.aws_availability_zones.mod.names[1]}"
+  availability_zone = "${var.availability_zones[1]}"
   cidr_block        = "${cidrsubnet(aws_vpc.mod.cidr_block, 4, 6)}"
   tags              = "${merge(local.common_tags, map("Name", "${local.name}-b-pub"))}"
 }
@@ -61,7 +58,7 @@ resource "aws_subnet" "b_public" {
 # private subnet [AZ c] [netmask /19] [available IPv4s 8187]
 resource "aws_subnet" "c_private" {
   vpc_id            = "${aws_vpc.mod.id}"
-  availability_zone = "${data.aws_availability_zones.mod.names[2]}"
+  availability_zone = "${var.availability_zones[2]}"
   cidr_block        = "${cidrsubnet(aws_vpc.mod.cidr_block, 3, 4)}"
   tags              = "${merge(local.common_tags, map("Name", "${local.name}-c-priv"))}"
 }
@@ -69,7 +66,7 @@ resource "aws_subnet" "c_private" {
 # public subnet [AZ c] [netmask /20] [available IPv4s 4091]
 resource "aws_subnet" "c_public" {
   vpc_id            = "${aws_vpc.mod.id}"
-  availability_zone = "${data.aws_availability_zones.mod.names[2]}"
+  availability_zone = "${var.availability_zones[2]}"
   cidr_block        = "${cidrsubnet(aws_vpc.mod.cidr_block, 4, 10)}"
   tags              = "${merge(local.common_tags, map("Name", "${local.name}-c-pub"))}"
 }

@@ -1,0 +1,92 @@
+# ------------------------------------------------------------------------------
+# Meta
+# ------------------------------------------------------------------------------
+
+variable "app" {
+  description = "Application name for resource-grouping"
+}
+
+variable "env" {
+  description = "Environment scope for resource-grouping"
+}
+
+variable "prefix_env" {
+  description = "Whether to add env to name prefix (true or false)"
+  default     = "true"
+}
+
+# ------------------------------------------------------------------------------
+# Vault
+# ------------------------------------------------------------------------------
+
+variable "vault_download_url" {
+  default     = "https://releases.hashicorp.com/vault/0.8.2/vault_0.8.2_linux_amd64.zip"
+  description = "Download URL for the Vault binary"
+}
+
+variable "vault_config" {
+  description = "Configuration (text) for Vault"
+}
+
+variable "vault_install_cmds" {
+  default     = ""
+  description = "Additional commands you'd like to run in the install script"
+}
+
+# ------------------------------------------------------------------------------
+# Cloud
+# ------------------------------------------------------------------------------
+
+variable "server_image" {
+  description = "Image ID for the Vault instances (currently AWS AMI)"
+}
+
+variable "server_class" {
+  description = "Server class/tier for the Vault instances (currently AWS EC2 instance types)"
+}
+
+variable "server_az" {
+  type        = "list"
+  description = "Availability zones for the Vault instances (currently AWS region codes)"
+}
+
+variable "server_healthcheck" {
+  description = "Health-check endpoint for the Vault instances (currently for AWS ELB)"
+  default     = "HTTP:8200/v1/sys/health"
+}
+
+variable "min_nodes" {
+  description = "Minimum number of Vault instances"
+  default     = "1"
+}
+
+variable "max_nodes" {
+  description = "Maximum number of Vault instances"
+  default     = "5"
+}
+
+variable "subnet_ids" {
+  description = "List of subnets for the Vault instances in (currently AWS VPC subnets)"
+}
+
+variable "vpc_id" {
+  description = "Cloud VPC ID for the Vault instances (currently AWS VPC)"
+}
+
+variable "ssh_key_name" {
+  description = "SSH key pair for the Vault instances"
+}
+
+# Useful for setting to a non-default port number so harder to breach by
+# scripted bots that crawls the default port
+variable "ssh_port" {
+  description = "SSH port number for any server instances"
+  default     = 22
+}
+
+# Use this to only limit access from your personal/work IP(s)
+variable "allowed_ssh_ips" {
+  type        = "list"
+  description = "List of allowed IPs for SSH"
+  default     = ["0.0.0.0/0"]
+}

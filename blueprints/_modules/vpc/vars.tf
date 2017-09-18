@@ -16,6 +16,12 @@ variable "prefix_env" {
   default     = "true"
 }
 
+# Ensure there's 3 minimum AZ specified
+variable "availability_zones" {
+  type        = "list"
+  description = "List of availability zones"
+}
+
 # Pick a CIDR that is unique to the region in the event you'd want VPC-peering,
 # as identical CIDR range cannot overlap
 variable "cidr_block" {
@@ -27,18 +33,4 @@ variable "cidr_block" {
 variable "tenancy_type" {
   description = "VPC tenancy type (default or dedicated)"
   default     = "default"
-}
-
-# Useful for setting to a non-default port number so harder to breach by
-# scripted bots that crawls the default port
-variable "ssh_port" {
-  description = "SSH port number for any server instances"
-  default     = 22
-}
-
-# Use this to only limit access from your personal/work IP(s)
-variable "ssh_ips" {
-  type        = "list"
-  description = "List of allowed IPs for SSH"
-  default     = ["0.0.0.0/0"]
 }
