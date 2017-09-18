@@ -74,7 +74,7 @@ variable "max_nodes" {
 }
 
 variable "subnet_ids" {
-  type = "list"
+  type        = "list"
   description = "List of subnets for the Vault instances in (currently AWS VPC subnets)"
 }
 

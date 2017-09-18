@@ -40,15 +40,28 @@ resource "aws_autoscaling_group" "vault" {
   health_check_type         = "EC2"
   health_check_grace_period = 15
 
-  availability_zones   = "${var.server_az}"
+  availability_zones   = ["${var.server_az}"]
   load_balancers       = ["${aws_elb.vault.id}"]
-  vpc_zone_identifier  = "${var.subnet_ids}"
+  vpc_zone_identifier  = ["${var.subnet_ids}"]
   launch_configuration = "${aws_launch_configuration.vault.name}"
 
-  # tags = "${merge(local.common_tags, map(
-  #   "Name", local.name,
-  #   "propagate_at_launch", true
-  # ))}"
+  tag {
+    key                 = "App"
+    value               = "${var.app}"
+    propagate_at_launch = true
+  }
+
+  tag {
+    key                 = "Env"
+    value               = "${var.env}"
+    propagate_at_launch = true
+  }
+
+  tag {
+    key                 = "Name"
+    value               = "${local.name}"
+    propagate_at_launch = true
+  }
 }
 
 # Load balancer
@@ -62,7 +75,7 @@ resource "aws_elb" "vault" {
   # internal-facing nodes are not accessible by the internet (think carefully)
   internal = "${var.public_facing == "false" ? true : false}"
 
-  subnets         = "${var.subnet_ids}"
+  subnets         = ["${var.subnet_ids}"]
   security_groups = ["${aws_security_group.load_balancer.id}"]
 
   # HTTP
