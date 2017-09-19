@@ -33,7 +33,7 @@ sudo mv /tmp/post-start /usr/share/vault/post-start.sh
 
 # create Vault server config
 cat <<EOF >/tmp/vault-config
-${config}
+${vault_config}
 EOF
 sudo mv /tmp/vault-config /etc/vault.conf
 

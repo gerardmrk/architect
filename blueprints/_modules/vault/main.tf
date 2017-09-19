@@ -12,8 +12,8 @@ data "template_file" "vault_install_script" {
 
   vars {
     download_url        = "${var.vault_download_url}"
-    config              = "${var.vault_config}"
     additional_cmds     = "${var.vault_install_cmds}"
+    vault_config        = "${file("${path.module}/scripts/vault_config.hcl")}"
     systemd_settings    = "${file("${path.module}/scripts/vault.service")}"
     pre_start_script    = "${file("${path.module}/scripts/vault.pre_start.sh")}"
     post_start_script   = "${file("${path.module}/scripts/vault.post_start.sh")}"

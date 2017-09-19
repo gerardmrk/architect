@@ -31,9 +31,6 @@ module "secrets_dev" {
   env        = "${local.env}"
   prefix_env = "${local.prefix_env}"
 
-  vault_config       = "${file("./vault_config.hcl")}"
-  vault_install_cmds = ""
-
   server_image = "ami-e2021d81"
   server_class = "t2.micro"
   server_az    = "${join(",", data.aws_availability_zones.az_dev.names)}"

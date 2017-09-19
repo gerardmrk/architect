@@ -24,10 +24,6 @@ variable "vault_download_url" {
   description = "Download URL for the Vault binary"
 }
 
-variable "vault_config" {
-  description = "Configuration (text) for Vault"
-}
-
 variable "vault_install_cmds" {
   default     = ""
   description = "Additional commands you'd like to run in the install script"
