@@ -20,7 +20,7 @@ data "template_file" "vault_install_script" {
 
 # Individual server node configuration
 resource "aws_launch_configuration" "vault" {
-  name = "${local.name}-vault-lc"
+  name_prefix = "${local.name}-vault"
 
   image_id        = "${var.server_image}"
   instance_type   = "${var.server_class}"
@@ -31,7 +31,7 @@ resource "aws_launch_configuration" "vault" {
 
 # Auto-scaling configuration
 resource "aws_autoscaling_group" "vault" {
-  name = "${local.name}-vault-asg"
+  name = "${local.name}-vault"
 
   min_size         = "${var.min_nodes}"
   max_size         = "${var.max_nodes}"
@@ -40,7 +40,6 @@ resource "aws_autoscaling_group" "vault" {
   health_check_type         = "EC2"
   health_check_grace_period = 15
 
-  availability_zones   = ["${split(",", var.server_az)}"]
   load_balancers       = ["${aws_elb.vault.id}"]
   vpc_zone_identifier  = ["${split(",", var.subnet_ids)}"]
   launch_configuration = "${aws_launch_configuration.vault.name}"
@@ -66,7 +65,7 @@ resource "aws_autoscaling_group" "vault" {
 
 # Load balancer
 resource "aws_elb" "vault" {
-  name = "${local.name}-vault-elb"
+  name = "${local.name}-vault"
 
   # ensure in-flight requests to unhealthy/deregistering nodes run to completion
   connection_draining         = true

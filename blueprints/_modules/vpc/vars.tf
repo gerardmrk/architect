@@ -22,8 +22,7 @@ variable "availability_zones" {
   description = "List of availability zones"
 }
 
-# Pick a CIDR that is unique to the region in the event you'd want VPC-peering,
-# as identical CIDR range cannot overlap
+# Pick a CIDR that is unique to the region in the event you'd want VPC-peering
 variable "cidr_block" {
   description = "CIDR block for the VPC"
   default     = "10.0.0.0/16"
