@@ -11,10 +11,13 @@ data "template_file" "vault_install_script" {
   template = "${file("${path.module}/scripts/vault.install.sh")}"
 
   vars {
-    download_url    = "${var.vault_download_url}"
-    config          = "${var.vault_config}"
-    additional_cmds = "${var.vault_install_cmds}"
-    init_script     = "${file("${path.module}/scripts/vault.init.sh")}"
+    download_url        = "${var.vault_download_url}"
+    config              = "${var.vault_config}"
+    additional_cmds     = "${var.vault_install_cmds}"
+    systemd_settings    = "${file("${path.module}/scripts/vault.service")}"
+    pre_start_script    = "${file("${path.module}/scripts/vault.pre_start.sh")}"
+    post_start_script   = "${file("${path.module}/scripts/vault.post_start.sh")}"
+    user_session_script = "${file("${path.module}/scripts/vault.session.sh")}"
   }
 }
 
