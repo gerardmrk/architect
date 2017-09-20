@@ -13,6 +13,12 @@ locals {
 # List all available availability zones from the region
 data "aws_availability_zones" "az_dev" {}
 
+# AWS key pair for node access
+resource "aws_key_pair" "vault_dev" {
+  key_name   = "${local.app}-${local.env}"
+  public_key = "${file("~/.ssh/id_rsa.pub")}"
+}
+
 module "network_dev" {
   source = "../_modules/vpc"
 
@@ -41,6 +47,6 @@ module "secrets_dev" {
   subnet_ids    = "${module.network_dev.private_subnet_ids}"
   vpc_id        = "${module.network_dev.vpc_id}"
 
-  ssh_key_name = ""
+  ssh_key_name = "${aws_key_pair.vault_dev.key_name}"
   ssh_port     = 22
 }
