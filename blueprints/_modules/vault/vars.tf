@@ -16,20 +16,6 @@ variable "prefix_env" {
 }
 
 # ------------------------------------------------------------------------------
-# Vault
-# ------------------------------------------------------------------------------
-
-variable "vault_download_url" {
-  default     = "https://releases.hashicorp.com/vault/0.8.2/vault_0.8.2_linux_amd64.zip"
-  description = "Download URL for the Vault binary"
-}
-
-variable "vault_install_cmds" {
-  default     = ""
-  description = "Additional commands you'd like to run in the install script"
-}
-
-# ------------------------------------------------------------------------------
 # Cloud
 # ------------------------------------------------------------------------------
 

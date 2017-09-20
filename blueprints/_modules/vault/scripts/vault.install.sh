@@ -8,53 +8,59 @@ sudo apt-get install -y curl unzip
 # download Vault
 curl -L "${download_url}" > /tmp/vault.zip
 
-# unzip Vault
+# unzip Vault and set permissions + ownership
 cd /tmp
 sudo unzip vault.zip
 sudo mv vault /usr/local/bin
-
-# unzip and set permissions and ownership
 sudo chmod 0755 /usr/local/bin/vault
 sudo chown root:root /usr/local/bin/vault
 
-sudo mkdir /usr/share/vault
-
-# create pre-start script
+# write pre-start script
 cat <<EOF >/tmp/pre-start
 ${pre_start_script}
 EOF
-sudo mv /tmp/pre-start /usr/share/vault/pre-start.sh
 
-# create post-start script
+# write post-start script
 cat <<EOF >/tmp/post-start
 ${post_start_script}
 EOF
-sudo mv /tmp/post-start /usr/share/vault/post-start.sh
 
-# create Vault server config
-cat <<EOF >/tmp/vault-config
-${vault_config}
-EOF
-sudo mv /tmp/vault-config /etc/vault.conf
-
-# create Systemd settings for the Vault server
-cat <<EOF >/tmp/systemd-settings
-${systemd_settings}
-EOF
-sudo mv /tmp/systemd-settings /usr/lib/systemd/system/vault.service
-
-# create init script for user sessions
+# write init script for user sessions
 cat <<EOF >/tmp/session-init
 ${user_session_script}
 EOF
-sudo mv /tmp/session-init /etc/profile.d/vault.sh
 
-# run any additional commands
-${additional_cmds}
+# write Vault server config
+cat <<EOF >/tmp/vault-config
+${vault_config}
+EOF
+
+# write Systemd settings for the Vault server
+cat <<EOF >/tmp/systemd-settings
+${systemd_settings}
+EOF
+
+# create directory for our custom pre/post/session scripts
+sudo mkdir /usr/share/vault
+
+# create directory for our vault daemon service
+sudo mkdir /usr/lib/systemd/system
+
+# create the scripts
+sudo mv /tmp/pre-start /usr/share/vault/pre-start.sh
+sudo mv /tmp/post-start /usr/share/vault/post-start.sh
+sudo mv /tmp/session-init /etc/profile.d/vault.sh
+sudo mv /tmp/vault-config /etc/vault.conf
+sudo mv /tmp/systemd-settings /etc/systemd/system/vault.service
+
+# set permissions
+sudo chmod 0755 /usr/share/vault/pre-start.sh
+sudo chmod 0755 /usr/share/vault/post-start.sh
+sudo chmod 0755 /etc/profile.d/vault.sh
 
 # add vault to system startup
-systemctl daemon-reload
-systemctl enable vault
+sudo systemctl daemon-reload
+sudo systemctl enable vault
 
 # start Vault
-systemctl start vault
+sudo systemctl start vault

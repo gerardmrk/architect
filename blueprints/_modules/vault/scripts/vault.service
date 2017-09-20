@@ -13,7 +13,7 @@ CapabilityBoundingSet=CAP_SYSLOG CAP_IPC_LOCK
 NoNewPrivileges=yes
 ExecStartPre=/usr/share/vault/pre-start.sh
 ExecStartPost=/usr/share/vault/post-start.sh
-ExecStart=/bin/vault server -config=/etc/vault.conf
+ExecStart=/usr/local/bin/vault server -config=/etc/vault.conf
 KillSignal=SIGINT
 TimeoutStopSec=30s
 Restart=on-failure

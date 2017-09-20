@@ -1,7 +1,11 @@
-storage "s3" {
-  
+listener "tcp" {
+  address = "${tcp_address}"
+  tls_disable = "${tls_disable}"
 }
 
-listener "tcp" {
-  address = "127.0.0.1:8200"
+storage "s3" {
+  bucket = "${storage_id}"
+  region = "${storage_region}"
+  access_key = "${access_key}"
+  secret_key = "${secret_key}"
 }

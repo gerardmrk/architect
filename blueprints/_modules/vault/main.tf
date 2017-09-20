@@ -1,5 +1,6 @@
 locals {
-  name = "${var.prefix_env == "true" ? "${var.app}-${var.env}" : var.app}"
+  download_url = "https://releases.hashicorp.com/vault/0.8.2/vault_0.8.2_linux_amd64.zip"
+  name         = "${var.prefix_env == "true" ? "${var.app}-${var.env}" : var.app}"
 
   common_tags = {
     App = "${var.app}"
@@ -7,13 +8,25 @@ locals {
   }
 }
 
+data "template_file" "vault_config" {
+  template = "${file("${path.module}/scripts/vault_config.hcl")}"
+
+  vars {
+    tcp_address    = "127.0.0.1:8200"
+    tls_disable    = "true"
+    storage_id     = "sleepless-xoxoxo"
+    storage_region = "ap-southeast-2"
+    access_key     = "AKIAJFDI3VYX3HIKTSQQ"
+    secret_key     = "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"
+  }
+}
+
 data "template_file" "vault_install_script" {
   template = "${file("${path.module}/scripts/vault.install.sh")}"
 
   vars {
-    download_url        = "${var.vault_download_url}"
-    additional_cmds     = "${var.vault_install_cmds}"
-    vault_config        = "${file("${path.module}/scripts/vault_config.hcl")}"
+    download_url        = "${local.download_url}"
+    vault_config        = "${data.template_file.vault_config.rendered}"
     systemd_settings    = "${file("${path.module}/scripts/vault.service")}"
     pre_start_script    = "${file("${path.module}/scripts/vault.pre_start.sh")}"
     post_start_script   = "${file("${path.module}/scripts/vault.post_start.sh")}"
