@@ -16,8 +16,8 @@ data "template_file" "vault_config" {
     tls_disable    = "true"
     storage_id     = "sleepless-xoxoxo"
     storage_region = "ap-southeast-2"
-    access_key     = "AKIAJFDI3VYX3HIKTSQQ"
-    secret_key     = "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"
+    access_key     = ""
+    secret_key     = ""
   }
 }
 
